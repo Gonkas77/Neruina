@@ -54,7 +54,6 @@ tasks {
         inputs.properties(modMetadata)
         filesMatching("fabric.mod.json") { expand(modMetadata) }
         filesMatching("META-INF/neoforge.mods.toml") { expand(modMetadata) }
-        filesMatching("META-INF/mods.toml") { expand(modMetadata) }
     }
 }
 
@@ -90,51 +89,16 @@ if(loader.isFabric) {
     }
 }
 
-if (loader.isForge) {
-    dependencies {
-        forge("net.minecraftforge:forge:$minecraftVersion-${loader.getVersion()}")
-
-        compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:${property("mixin_extras")}")!!)
-        implementation(include("io.github.llamalad7:mixinextras-forge:${property("mixin_extras")}")!!)
-        if(minecraftVersion.lessThan("1.19.3")) {
-            modCompileOnly("curse.maven:it-shall-not-tick-619355:${property("it_shall_not_tick")}")
-        }
-        if(minecraftVersion.lessThan("1.20.2")) {
-            modCompileOnly("curse.maven:no-see-no-tick-833405:${property("no_see_no_tick")}")
-            modCompileOnly("curse.maven:doespotatotick-825355:${property("does_potato_tick")}")
-        }
-
-        mappings("net.fabricmc:yarn:$minecraftVersion+build.${property("yarn_build")}:v2")
-    }
-
-    loom {
-        forge {
-            convertAccessWideners = true
-            mixinConfig("${mod.id}.mixins.json")
-        }
-    }
-
-    if (minecraftVersion.greaterThan("1.19.4")) {
-        sourceSets.forEach {
-            val dir = layout.buildDirectory.dir("sourceSets/${it.name}").get().asFile
-            it.output.setResourcesDir(dir)
-            it.java.destinationDirectory = dir
-        }
-    }
-}
-
 if (loader.isNeoForge) {
     dependencies {
         "neoForge"("net.neoforged:neoforge:${loader.getVersion()}")
 
         mappings(loom.layered {
             mappings("net.fabricmc:yarn:$minecraftVersion+build.${property("yarn_build")}:v2")
-            if(loader.isNeoForge) {
-                if (minecraftVersion.lessThan("1.21")) {
-                    mappings("dev.architectury:yarn-mappings-patch-neoforge:1.20.5+build.3")
-                } else {
-                    mappings(file("mappings/fix.tiny"))
-                }
+            if (minecraftVersion.lessThan("1.21")) {
+                mappings("dev.architectury:yarn-mappings-patch-neoforge:1.20.5+build.3")
+            } else {
+                mappings(file("mappings/fix.tiny"))
             }
         })
     }
