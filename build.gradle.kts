@@ -8,57 +8,9 @@ plugins {
     id("me.modmuss50.mod-publish-plugin") version "0.5.+"
 }
 
-class ModData {
-    val id = property("mod_id").toString()
-    val name = property("mod_name").toString()
-    val version = property("mod_version").toString()
-    val group = property("mod_group").toString()
-    val minecraftDependency = property("minecraft_dependency").toString()
-    val minSupportedVersion = property("mod_min_supported_version").toString()
-    val maxSupportedVersion = property("mod_max_supported_version").toString()
-}
-
-class LoaderData {
-    private val name = loom.platform.get().name.lowercase()
-    val isFabric = name == "fabric"
-    val isForge = name == "forge"
-    val isNeoForge = name == "neoforge"
-
-    fun getVersion() : String? {
-        return if(isForge) {
-            property("forge_loader")?.toString()
-        } else if (isNeoForge) {
-            property("neoforge_loader")?.toString()
-        } else {
-            property("fabric_loader")?.toString()
-        }
-    }
-
-    override fun toString(): String {
-        return name
-    }
-}
-
-class MinecraftVersionData {
-    private val name = stonecutter.current.version.substringBeforeLast("-")
-    val needs21 = greaterThan("1.20.4")
-
-    fun greaterThan(other: String) : Boolean {
-        return stonecutter.compare(name, other.lowercase()) > 0
-    }
-
-    fun lessThan(other: String) : Boolean {
-        return stonecutter.compare(name, other.lowercase()) < 0
-    }
-
-    override fun toString(): String {
-        return name
-    }
-}
-
-val mod = ModData()
-val loader = LoaderData()
-val minecraftVersion = MinecraftVersionData()
+val mod = ModData(project)
+val loader = LoaderData(project, loom.platform.get().name.lowercase())
+val minecraftVersion = MinecraftVersionData(stonecutter)
 
 version = "${mod.version}-$loader+$minecraftVersion"
 group = mod.group
@@ -86,16 +38,31 @@ loom {
     }
 }
 
-tasks.withType<JavaCompile> {
-    options.release = if (minecraftVersion.needs21) 21 else 17
+tasks {
+    withType<JavaCompile> {
+        options.release = minecraftVersion.javaVersion()
+    }
+
+    processResources {
+        val modMetadata = mapOf(
+            "description" to mod.description,
+            "version" to mod.version,
+            "minecraft_dependency" to mod.minecraftDependency,
+            "loader_version" to loader.getVersion()
+        )
+
+        inputs.properties(modMetadata)
+        filesMatching("fabric.mod.json") { expand(modMetadata) }
+        filesMatching("META-INF/neoforge.mods.toml") { expand(modMetadata) }
+        filesMatching("META-INF/mods.toml") { expand(modMetadata) }
+    }
 }
 
 java {
     withSourcesJar()
 
-    val javaVersion = if (minecraftVersion.needs21) JavaVersion.VERSION_21 else JavaVersion.VERSION_17
-    sourceCompatibility = javaVersion
-    targetCompatibility = javaVersion
+    sourceCompatibility = JavaVersion.toVersion(minecraftVersion.javaVersion())
+    targetCompatibility = JavaVersion.toVersion(minecraftVersion.javaVersion())
 }
 
 val buildAndCollect = tasks.register<Copy>("buildAndCollect") {
@@ -121,21 +88,11 @@ if(loader.isFabric) {
 
         mappings("net.fabricmc:yarn:$minecraftVersion+build.${property("yarn_build")}:v2")
     }
-
-    tasks.processResources {
-        val map = mapOf(
-            "version" to mod.version,
-            "minecraft_dependency" to mod.minecraftDependency
-        )
-
-        inputs.properties(map)
-        filesMatching("fabric.mod.json") { expand(map) }
-    }
 }
 
 if (loader.isForge) {
     dependencies {
-        "forge"("net.minecraftforge:forge:$minecraftVersion-${loader.getVersion()}")
+        forge("net.minecraftforge:forge:$minecraftVersion-${loader.getVersion()}")
 
         compileOnly(annotationProcessor("io.github.llamalad7:mixinextras-common:${property("mixin_extras")}")!!)
         implementation(include("io.github.llamalad7:mixinextras-forge:${property("mixin_extras")}")!!)
@@ -155,17 +112,6 @@ if (loader.isForge) {
             convertAccessWideners = true
             mixinConfig("${mod.id}.mixins.json")
         }
-    }
-
-    tasks.processResources {
-        val map = mapOf(
-            "version" to mod.version,
-            "minecraft_dependency" to mod.minecraftDependency,
-            "loader_version" to loader.getVersion()
-        )
-
-        inputs.properties(map)
-        filesMatching("META-INF/mods.toml") { expand(map) }
     }
 
     if (minecraftVersion.greaterThan("1.19.4")) {
@@ -236,8 +182,6 @@ publishMods {
     type = STABLE
     modLoaders.add(loader.toString())
 
-    dryRun = false
-
     github {
         accessToken = providers.gradleProperty("GITHUB_TOKEN")
         repository = "Bawnorton/Neruina"
@@ -247,15 +191,8 @@ publishMods {
 
     modrinth {
         accessToken = providers.gradleProperty("MODRINTH_TOKEN")
-        projectId = "1s5x833P"
-        if(mod.minSupportedVersion == mod.maxSupportedVersion) {
-            minecraftVersions.add(mod.minSupportedVersion)
-        } else {
-            minecraftVersionRange {
-                start = mod.minSupportedVersion
-                end = mod.maxSupportedVersion
-            }
-        }
+        projectId = mod.modrinthProjId
+        minecraftVersions.addAll(mod.supportedVersions.split(", "))
         if(loader.isFabric) {
             requires {
                 slug = "fabric-api"
@@ -265,15 +202,8 @@ publishMods {
 
     curseforge {
         accessToken = providers.gradleProperty("CURSEFORGE_TOKEN")
-        projectId = "851046"
-        if(mod.minSupportedVersion == mod.maxSupportedVersion) {
-            minecraftVersions.add(mod.minSupportedVersion)
-        } else {
-            minecraftVersionRange {
-                start = mod.minSupportedVersion
-                end = mod.maxSupportedVersion
-            }
-        }
+        projectId = mod.curseforgeProjId
+        minecraftVersions.addAll(mod.supportedVersions.split(", "))
         if(loader.isFabric) {
             requires {
                 slug = "fabric-api"
