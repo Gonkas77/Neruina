@@ -20,6 +20,7 @@ repositories {
     mavenCentral()
     maven("https://cursemaven.com")
     maven("https://maven.neoforged.net/releases/")
+    maven("https://maven.bawnorton.com/releases/")
 }
 
 dependencies {
@@ -29,6 +30,10 @@ dependencies {
     include(implementation("com.fasterxml.jackson.core:jackson-core:${property("jackson")}")!!)
     include(implementation("com.fasterxml.jackson.core:jackson-databind:${property("jackson")}")!!)
     include(implementation("com.fasterxml.jackson.core:jackson-annotations:${property("jackson")}")!!)
+
+    if (minecraftVersion.greaterThan("1.20.7")) {
+        annotationProcessor(modImplementation("com.bawnorton.configurable:configurable-$loader-yarn:${property("configurable")}") { isTransitive = false })
+    }
 }
 
 loom {
@@ -91,7 +96,7 @@ if(loader.isFabric) {
 
 if (loader.isNeoForge) {
     dependencies {
-        "neoForge"("net.neoforged:neoforge:${loader.getVersion()}")
+        neoForge("net.neoforged:neoforge:${loader.getVersion()}")
 
         mappings(loom.layered {
             mappings("net.fabricmc:yarn:$minecraftVersion+build.${property("yarn_build")}:v2")
