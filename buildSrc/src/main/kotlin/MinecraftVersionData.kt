@@ -1,4 +1,4 @@
-import dev.kikugie.stonecutter.StonecutterBuild
+import dev.kikugie.stonecutter.build.StonecutterBuild
 
 class MinecraftVersionData(private val stonecutter: StonecutterBuild) {
     private val name = stonecutter.current.version.substringBeforeLast("-")

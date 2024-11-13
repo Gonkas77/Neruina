@@ -31,12 +31,17 @@ public record ReportStatus(Code code, @Nullable String message) {
         return new ReportStatus(Code.FAILURE);
     }
 
+    public static ReportStatus testing() {
+        return new ReportStatus(Code.TESTING);
+    }
+
     public enum Code {
         SUCCESS,
         FAILURE,
         ALREADY_EXISTS,
         ABORTED,
         IN_PROGRESS,
-        TIMEOUT
+        TIMEOUT,
+        TESTING
     }
 }

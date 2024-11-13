@@ -22,7 +22,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 public final class AutoReportHandler {
-    /*? if >=1.19 {*/
     private final Set<UUID> reportedEntries = Collections.synchronizedSet(new HashSet<>());
     private final List<AutoReportConfig> configs = new ArrayList<>();
     private final Map<String, RepositoryReference> repositories = new HashMap<>();
@@ -57,6 +56,10 @@ public final class AutoReportHandler {
     }
 
     public CompletableFuture<ReportStatus> createReports(ServerPlayerEntity player, TickingEntry entry) {
+        return createReports(player, entry, true);
+    }
+
+    public CompletableFuture<ReportStatus> createReports(ServerPlayerEntity player, TickingEntry entry, boolean publish) {
         UUID entryId = entry.uuid();
         if (reportedEntries.contains(entryId)) {
             return CompletableFuture.completedFuture(ReportStatus.alreadyExists());
@@ -117,18 +120,21 @@ public final class AutoReportHandler {
         }
 
         Map<String, GHIssue> builtIssues = new HashMap<>();
-        issueBuilders.forEach((s, ghIssueBuilder) -> {
-            if (ghIssueBuilder == null) return;
-            try {
-                builtIssues.put(s, ghIssueBuilder.create());
-            } catch (IOException e) {
-                Neruina.LOGGER.error("Failed to create issue for mod: \"{}\"", s, e);
-            }
-        });
+        if (publish) {
+            issueBuilders.forEach((s, ghIssueBuilder) -> {
+                if (ghIssueBuilder == null) return;
+                try {
+                    builtIssues.put(s, ghIssueBuilder.create());
+                } catch (IOException e) {
+                    Neruina.LOGGER.error("Failed to create issue for mod: \"{}\"", s, e);
+                }
+            });
+        }
 
         GHIssueBuilder masterIssueBuilder;
+
         try {
-             masterIssueBuilder = createMasterIssue(github, builtIssues, entry);
+            masterIssueBuilder = createMasterIssue(github, builtIssues, entry);
         } catch (RuntimeException e) {
             Neruina.LOGGER.error("Failed to create master issue", e);
             return CompletableFuture.completedFuture(ReportStatus.failure());
@@ -136,14 +142,18 @@ public final class AutoReportHandler {
         if (masterIssueBuilder == null) return CompletableFuture.completedFuture(ReportStatus.failure());
 
         try {
-            GHIssue masterIssue = masterIssueBuilder.create();
-            String url = masterIssue.getHtmlUrl().toString();
-            Neruina.LOGGER.info(
-                    "Report(s) created for ticking entry: ({}: {})",
-                    entry.getCauseType(),
-                    entry.getCauseName()
-            );
-            return CompletableFuture.completedFuture(ReportStatus.success(url));
+            if (publish) {
+                GHIssue masterIssue = masterIssueBuilder.create();
+                String url = masterIssue.getHtmlUrl().toString();
+                Neruina.LOGGER.info(
+                        "Report(s) created for ticking entry: ({}: {})",
+                        entry.getCauseType(),
+                        entry.getCauseName()
+                );
+                return CompletableFuture.completedFuture(ReportStatus.success(url));
+            } else {
+                return CompletableFuture.completedFuture(ReportStatus.testing());
+            }
         } catch (IOException e) {
             Neruina.LOGGER.error("Failed to create master issue", e);
             return CompletableFuture.completedFuture(ReportStatus.failure());
@@ -195,5 +205,15 @@ public final class AutoReportHandler {
         return reference.createIssueBuilder(formatter.getTitle(entry))
                 .body(formatter.getBody(entry, github));
     }
-    /*?}*/
+
+    public void testReporting(ServerPlayerEntity player) {
+        TickingEntry dummyEntry = new TickingEntry(
+                player,
+                false,
+                player.getWorld().getRegistryKey(),
+                player.getBlockPos(),
+                new RuntimeException()
+        );
+        createReports(player, dummyEntry, false);
+    }
 }

@@ -5,7 +5,7 @@ import com.bawnorton.neruina.config.Config;
 import com.bawnorton.neruina.thread.ConditionalRunnable;
 import com.bawnorton.neruina.util.ErroredType;
 import com.bawnorton.neruina.util.TickingEntry;
-import com.bawnorton.neruina.version.VersionedText;
+import com.bawnorton.neruina.version.Texter;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.MinecraftServer;
@@ -23,6 +23,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+//? if >1.20.7
+import com.bawnorton.configurable.Configurable;
+
 //? if >1.19.2 {
 import net.minecraft.registry.RegistryKey;
 //?} else {
@@ -30,9 +33,18 @@ import net.minecraft.registry.RegistryKey;
 *///?}
 
 public final class MessageHandler {
+    //? if >1.20.7 {
+    @Configurable("log_level")
+    public static Config.LogLevel logLevel = Config.LogLevel.OPERATORS;
+    //?}
+
     public void broadcastToPlayers(MinecraftServer server, Text message) {
         ConditionalRunnable.create(() -> {
-            switch (Config.getInstance().logLevel) {
+            //? if >1.20.7 {
+            switch (logLevel) {
+            //?} else {
+            /*switch (Config.getInstance().logLevel) {
+            *///?}
                 case DISABLED -> {
                 }
                 case EVERYONE -> server.getPlayerManager()
@@ -50,7 +62,7 @@ public final class MessageHandler {
     public void broadcastToPlayers(MinecraftServer server, Text... messages) {
         broadcastToPlayers(
                 server,
-                VersionedText.pad(VersionedText.concatDelimited(VersionedText.LINE_BREAK, messages))
+                Texter.pad(Texter.concatDelimited(Texter.LINE_BREAK, messages))
         );
     }
 
@@ -59,30 +71,28 @@ public final class MessageHandler {
     }
 
     public void sendToPlayer(PlayerEntity player, Text message, boolean pad, @Nullable Text... actions) {
-        message = VersionedText.concatDelimited(
-                VersionedText.LINE_BREAK,
-                VersionedText.format(message),
-                actions != null ? VersionedText.concatDelimited(VersionedText.LINE_BREAK, actions) : null
+        message = Texter.concatDelimited(
+                Texter.LINE_BREAK,
+                Texter.format(message),
+                actions != null ? Texter.concatDelimited(Texter.LINE_BREAK, actions) : null
         );
-        player.sendMessage(pad ? VersionedText.pad(message) : message, false);
+        player.sendMessage(pad ? Texter.pad(message) : message, false);
     }
 
     public Text generateEntityActions(Entity entity) {
-        return VersionedText.concatDelimited(
-                VersionedText.SPACE,
+        return Texter.concatDelimited(
+                Texter.SPACE,
                 generateHandlingActions(ErroredType.ENTITY, entity.getWorld().getRegistryKey(), entity.getBlockPos(), entity.getUuid()),
                 generateKillAction(entity.getUuid())
         );
     }
 
     public Text generateResourceActions(TickingEntry entry) {
-        return VersionedText.concatDelimited(
-                VersionedText.SPACE,
+        return Texter.concatDelimited(
+                Texter.SPACE,
                 generateInfoAction(),
-                generateCopyCrashAction(entry)
-                /*? if >=1.19 {*/
-                , generateReportAction(entry)
-                /*?}*/
+                generateCopyCrashAction(entry),
+                generateReportAction(entry)
         );
     }
 
@@ -91,8 +101,8 @@ public final class MessageHandler {
     }
 
     public Text generateHandlingActions(ErroredType type, RegistryKey<World> dimension, BlockPos pos, @Nullable UUID uuid) {
-        return VersionedText.concatDelimited(
-                VersionedText.SPACE,
+        return Texter.concatDelimited(
+                Texter.SPACE,
                 generateTeleportAction(type, dimension, pos),
                 generateResumeAction(type, uuid != null ? uuid.toString() : posAsNums(pos))
         );
@@ -169,7 +179,7 @@ public final class MessageHandler {
 
     @SuppressWarnings("SameParameterValue")
     private Text generateCommandAction(Text message, String hoverKey, Formatting color, String command) {
-        return generateCommandAction(message, VersionedText.translatable(hoverKey), color, command);
+        return generateCommandAction(message, Texter.translatable(hoverKey), color, command);
     }
 
     private Text generateCommandAction(Text message, Text hoverMessage, Formatting color, String command) {
@@ -181,11 +191,11 @@ public final class MessageHandler {
     }
 
     private Text generateAction(String key, String hoverKey, Formatting color, ClickEvent.Action action, String value) {
-        return generateAction(VersionedText.translatable(key), VersionedText.translatable(hoverKey), color, action, value);
+        return generateAction(Texter.translatable(key), Texter.translatable(hoverKey), color, action, value);
     }
 
     private Text generateAction(Text message, Text hoverMessage, Formatting color, ClickEvent.Action action, String value) {
-        return Texts.bracketed(VersionedText.withStyle(
+        return Texts.bracketed(Texter.withStyle(
                 message,
                 style -> style.withColor(color)
                         .withClickEvent(new ClickEvent(action, value))
@@ -208,7 +218,7 @@ public final class MessageHandler {
         }
         tickHandler.getTickingEntries().forEach(entry -> tickingEntryMessages.add(
                 generateCommandAction(
-                        VersionedText.translatable(
+                        Texter.translatable(
                                 "neruina.ticking_entries.entry",
                                 entry.getCauseName(),
                                 posAsNums(entry.pos())
@@ -218,16 +228,16 @@ public final class MessageHandler {
                         "/neruina info %s".formatted(entry.uuid())
                 )
         ));
-        tickingEntryMessages.add(VersionedText.concatDelimited(
-                VersionedText.SPACE,
+        tickingEntryMessages.add(Texter.concatDelimited(
+                Texter.SPACE,
                 generateInfoAction(),
                 generateClearAction()
         ));
-        return VersionedText.concatDelimited(VersionedText.LINE_BREAK, tickingEntryMessages.toArray(new Text[0]));
+        return Texter.concatDelimited(Texter.LINE_BREAK, tickingEntryMessages.toArray(new Text[0]));
     }
 
     public Text formatText(String key, Object... args) {
-        return VersionedText.format(VersionedText.translatable(key, args));
+        return Texter.format(Texter.translatable(key, args));
     }
 
     public String posAsNums(BlockPos pos) {

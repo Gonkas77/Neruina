@@ -10,7 +10,7 @@ import com.bawnorton.neruina.exception.AbortedException;
 import com.bawnorton.neruina.exception.InProgressException;
 import com.bawnorton.neruina.handler.MessageHandler;
 import com.bawnorton.neruina.thread.AbortableCountDownLatch;
-import com.bawnorton.neruina.version.VersionedText;
+import com.bawnorton.neruina.version.Texter;
 import com.google.gson.JsonObject;
 import com.sun.net.httpserver.HttpServer;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -48,7 +48,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 public final class GithubAuthManager {
-    /*? if >=1.19 {*/
     private static final String CLIENT_ID = "1907e7c3f988a98face9";
     private static final String GITHUB_AUTH_URL = "https://github.com/login/oauth/authorize";
     private static final String GITHUB_TOKEN_URL = "https://github.com/login/oauth/access_token";
@@ -72,7 +71,7 @@ public final class GithubAuthManager {
         LoginRecord record = logins.computeIfAbsent(player.getUuid(), uuid -> new LoginRecord());
         if (record.gitHub != null) {
             messageHandler.sendToPlayer(player,
-                    VersionedText.translatable("commands.neruina.report.reporting"),
+                    Texter.translatable("commands.neruina.report.reporting"),
                     false
             );
 
@@ -84,7 +83,7 @@ public final class GithubAuthManager {
         }
 
         messageHandler.sendToPlayer(player,
-                VersionedText.translatable("commands.neruina.report.processing"),
+                Texter.translatable("commands.neruina.report.processing"),
                 false,
                 messageHandler.generateCancelLoginAction()
         );
@@ -119,7 +118,7 @@ public final class GithubAuthManager {
                 Neruina.LOGGER.info("Successfully Logged into GitHub as {}", record.gitHub.getMyself().getLogin());
 
                 messageHandler.sendToPlayer(player,
-                        VersionedText.translatable("commands.neruina.report.authenticated"),
+                        Texter.translatable("commands.neruina.report.authenticated"),
                         false
                 );
 
@@ -226,6 +225,4 @@ public final class GithubAuthManager {
         private boolean inProgress;
         private @Nullable GitHub gitHub;
     }
-
-    /*?}*/
 }

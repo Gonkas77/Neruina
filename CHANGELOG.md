@@ -1,3 +1,13 @@
+# 2.2.2
+
+- Support 1.21.3
+- Fix crash on report
+- Added a test arg to the report command to test internal functionality
+
+# 2.2.0
+
+- Drop forge
+
 # 2.1.2
 
 - Add dimension support to teleport action

@@ -1,4 +1,4 @@
-import dev.kikugie.stonecutter.StonecutterBuild
+import dev.kikugie.stonecutter.build.StonecutterBuild
 import net.fabricmc.loader.api.Version
 
 class StonecutterSwapper(private val stonecutter: StonecutterBuild) {

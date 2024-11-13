@@ -10,7 +10,7 @@ import com.bawnorton.neruina.platform.Platform;
 import com.bawnorton.neruina.util.ErroredType;
 import com.bawnorton.neruina.util.MultiSetMap;
 import com.bawnorton.neruina.util.TickingEntry;
-import com.bawnorton.neruina.version.VersionedText;
+import com.bawnorton.neruina.version.Texter;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
@@ -38,11 +38,36 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
 
+//? if >1.20.7
+import com.bawnorton.configurable.Configurable;
+
 public final class TickHandler {
     private final List<TickingEntry> recentErrors = new ArrayList<>();
     private final Map<UUID, TickingEntry> tickingEntries = new HashMap<>();
     private final MultiSetMap<BlockState, BlockPos> erroredBlockStates = new MultiSetMap<>();
     private int stopwatch = 0;
+
+    //? if >1.20.7 {
+    @Configurable("auto_kill_ticking_entities")
+    public static boolean autoKillTickingEntities = false;
+
+    @Configurable("ticking_exception_threshold")
+    public static int tickingExceptionThreshold = 10;
+
+    @Configurable("handles")
+    public static class Handles {
+        @Configurable
+        public static boolean entites = true;
+        @Configurable("block_entities")
+        public static boolean blockEntities = true;
+        @Configurable("block_states")
+        public static boolean blockStates = true;
+        @Configurable("item_stacks")
+        public static boolean itemStacks = true;
+        @Configurable
+        public static boolean players = true;
+    }
+    //?}
 
     public void tick() {
         stopwatch++;
@@ -93,7 +118,11 @@ public final class TickHandler {
         } catch (TickingException e) {
             throw e;
         } catch (Throwable e) {
-            if (!Config.getInstance().handleTickingEntities) {
+            //? if >1.20.7 {
+            if (Handles.entites) {
+            //?} else {
+            /*if (!Config.getInstance().handleTickingEntities) {
+            *///?}
                 throw TickingException.notHandled("handle_ticking_entities", e);
             }
             handleTickingEntity(entity, e);
@@ -110,7 +139,11 @@ public final class TickHandler {
         } catch (TickingException e) {
             throw e;
         } catch (Throwable e) {
-            if (!Config.getInstance().handleTickingEntities) {
+            //? if >1.20.7 {
+            if (Handles.entites) {
+            //?} else {
+            /*if (!Config.getInstance().handleTickingEntities) {
+            *///?}
                 throw TickingException.notHandled("handle_ticking_entities", e);
             }
             handleTickingEntity(entity, e);
@@ -121,7 +154,11 @@ public final class TickHandler {
         try {
             original.call(instance);
         } catch (Throwable e) {
-            if (!Config.getInstance().handleTickingPlayers) {
+            //? if >1.20.7 {
+            if (Handles.players) {
+            //?} else {
+            /*if (!Config.getInstance().handleTickingPlayers) {
+            *///?}
                 throw TickingException.notHandled("handle_ticking_players", e);
             }
             handleTickingPlayer(instance, e);
@@ -135,7 +172,11 @@ public final class TickHandler {
             }
             original.call(instance, world, pos, random);
         } catch (Throwable e) {
-            if (!Config.getInstance().handleTickingBlockStates) {
+            //? if >1.20.7 {
+            if (Handles.blockStates) {
+            //?} else {
+            /*if (!Config.getInstance().handleTickingBlockStates) {
+            *///?}
                 throw TickingException.notHandled("handle_ticking_block_states", e);
             }
             MessageHandler messageHandler = Neruina.getInstance().getMessageHandler();
@@ -168,7 +209,11 @@ public final class TickHandler {
             }
             original.call(instance, world, pos, state, blockEntity);
         } catch (Throwable e) {
-            if (!Config.getInstance().handleTickingBlockEntities) {
+            //? if >1.20.7 {
+            if (Handles.blockEntities) {
+            //?} else {
+            /*if (!Config.getInstance().handleTickingBlockEntities) {
+            *///?}
                 throw TickingException.notHandled("handle_ticking_block_entities", e);
             }
             MessageHandler messageHandler = Neruina.getInstance().getMessageHandler();
@@ -191,7 +236,11 @@ public final class TickHandler {
     }
 
     private void handleTickingItemStack(Throwable e, ItemStack instance, boolean isServer, PlayerEntity player, int slot) {
-        if (!Config.getInstance().handleTickingItemStacks) {
+        //? if >1.20.7 {
+        if (Handles.itemStacks) {
+        //?} else {
+        /*if (!Config.getInstance().handleTickingItemStacks) {
+        *///?}
             throw TickingException.notHandled("handle_ticking_item_stacks", e);
         }
         Neruina.LOGGER.warn("Neruina caught an exception, see below for cause", e);
@@ -201,7 +250,7 @@ public final class TickHandler {
             trackError((Errorable) (Object) instance, tickingEntry);
             MessageHandler messageHandler = Neruina.getInstance().getMessageHandler();
             messageHandler.sendToPlayer(player,
-                    VersionedText.translatable("neruina.ticking.item_stack", instance.getName().getString(), slot),
+                    Texter.translatable("neruina.ticking.item_stack", instance.getName().getString(), slot),
                     messageHandler.generateResumeAction(ErroredType.ITEM_STACK, player.getUuidAsString()),
                     messageHandler.generateResourceActions(tickingEntry)
             );
@@ -218,7 +267,11 @@ public final class TickHandler {
             }
 
             entity.baseTick();
-            if (Config.getInstance().autoKillTickingEntities || !entity.isAlive()) {
+            //? if >1.20.7 {
+            if (autoKillTickingEntities || !entity.isAlive()) {
+            //?} else {
+            /*if (Config.getInstance().autoKillTickingEntities || !entity.isAlive()) {
+            *///?}
                 killEntity(entity, null);
             }
         } catch (Throwable e) {
@@ -231,7 +284,13 @@ public final class TickHandler {
     }
 
     public void killEntity(Entity entity, @Nullable Text withMessage) {
-        entity.kill();
+        //? if >1.21.2 {
+        if(entity.getWorld() instanceof ServerWorld serverWorld) {
+            entity.kill(serverWorld);
+        }
+        //?} else {
+        /*entity.kill();
+        *///?}
         entity.remove(Entity.RemovalReason.KILLED); // Necessary for any living entity
         removeErrored(entity);
         if (withMessage != null) {
@@ -257,13 +316,25 @@ public final class TickHandler {
             TickingEntry tickingEntry = new TickingEntry(entity, true, world.getRegistryKey(), pos, e);
             trackError((Errorable) entity, tickingEntry);
             MessageHandler messageHandler = Neruina.getInstance().getMessageHandler();
-            Text message = messageHandler.formatText("neruina.ticking.entity.%s".formatted(Config.getInstance().autoKillTickingEntities ? "killed" : "suspended"),
+            Text message = messageHandler.formatText("neruina.ticking.entity.%s".formatted(
+                    //? if >1.20.7 {
+                    autoKillTickingEntities
+                    //?} else {
+                    /*Config.getInstance().autoKillTickingEntities
+                    *///?}
+                            ? "killed" : "suspended"
+                    ),
                     entity.getName().getString(),
                     messageHandler.posAsNums(pos)
             );
             Text actions = messageHandler.generateResourceActions(tickingEntry);
-            if (!Config.getInstance().autoKillTickingEntities) {
-                actions = VersionedText.concatDelimited(VersionedText.LINE_BREAK,
+            //? if >1.20.7 {
+            if (!autoKillTickingEntities) {
+            //?} else {
+            /*if (!Config.getInstance().autoKillTickingEntities) {
+            *///?}
+                actions = Texter.concatDelimited(
+                        Texter.LINE_BREAK,
                         messageHandler.generateEntityActions(entity),
                         actions
                 );
@@ -283,9 +354,9 @@ public final class TickHandler {
         messageHandler.broadcastToPlayers(server, message, messageHandler.generateResourceActions(tickingEntry));
         try {
             player.networkHandler.disconnect(
-                    VersionedText.concat(
-                            VersionedText.translatable("neruina.kick.message"),
-                            VersionedText.translatable("neruina.kick.reason")
+                    Texter.concat(
+                            Texter.translatable("neruina.kick.message"),
+                            Texter.translatable("neruina.kick.reason")
                     )
             );
         } catch (NullPointerException ex) {
@@ -311,14 +382,24 @@ public final class TickHandler {
         if (errorable != null) {
             errorable.neruina$setTickingEntryId(entry.uuid());
         }
-        if (Config.getInstance().tickingExceptionThreshold != -1 && recentErrors.size() >= Config.getInstance().tickingExceptionThreshold) {
+        //? if >1.20.7 {
+        if (tickingExceptionThreshold != -1 && recentErrors.size() >= tickingExceptionThreshold) {
+        //?} else {
+        /*if (Config.getInstance().tickingExceptionThreshold != -1 && recentErrors.size() >= Config.getInstance().tickingExceptionThreshold) {
+        *///?}
             CrashReport report = CrashReport.create(
                     new RuntimeException("Too Many Ticking Exceptions"),
                     "Neruina has caught too many ticking exceptions in a short period of time, something is very wrong, see below for more info"
             );
             CrashReportSection header = report.addElement("Information");
             header.add("Threshold",
-                    "%d, set \"ticking_exception_threshold\" to -1 to disable.".formatted(Config.getInstance().tickingExceptionThreshold)
+                    "%d, set \"ticking_exception_threshold\" to -1 to disable.".formatted(
+                            //? if >1.20.7 {
+                            tickingExceptionThreshold
+                            //?} else {
+                            /*Config.getInstance().tickingExceptionThreshold
+                            *///?}
+                    )
             );
             header.add("Caught", recentErrors.size());
             String wiki = "https://github.com/Bawnorton/Neruina/wiki/Too-Many-Ticking-Exceptions";

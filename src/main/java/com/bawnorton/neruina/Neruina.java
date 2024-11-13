@@ -26,7 +26,9 @@ public class Neruina {
     }
 
     public static void init() {
-        ConfigManager.loadConfig();
+        //? if <1.20.7 {
+        /*ConfigManager.loadConfig();
+        *///?}
     }
 
     public static Neruina getInstance() {

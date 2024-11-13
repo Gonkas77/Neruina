@@ -18,7 +18,6 @@ import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 
 public class IssueFormatter {
-    /*? if >=1.19 {*/
     private static final List<Placeholder> PLACEHOLDERS = List.of(
             new Placeholder("date", true, Restriction.NONE, (config, entry) -> DateFormat.getDateInstance(DateFormat.MEDIUM).format(new Date())),
             new Placeholder("time", true, Restriction.NONE, (config, entry) -> DateFormat.getTimeInstance(DateFormat.MEDIUM).format(new Date())),
@@ -167,5 +166,4 @@ public class IssueFormatter {
     private interface Applier {
         String apply(AutoReportConfig config, TickingEntry entry);
     }
-    /*?}*/
 }

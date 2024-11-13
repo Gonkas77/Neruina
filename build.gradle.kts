@@ -17,6 +17,7 @@ group = mod.group
 base.archivesName.set(mod.name)
 
 repositories {
+    mavenLocal()
     mavenCentral()
     maven("https://cursemaven.com")
     maven("https://maven.neoforged.net/releases/")
@@ -27,6 +28,7 @@ dependencies {
     minecraft("com.mojang:minecraft:$minecraftVersion")
 
     include(implementation("org.kohsuke:github-api:${property("kohsuke_github")}")!!)
+    include(implementation("org.apache.httpcomponents.core5:httpcore5:${property("httpcore5")}")!!)
     include(implementation("com.fasterxml.jackson.core:jackson-core:${property("jackson")}")!!)
     include(implementation("com.fasterxml.jackson.core:jackson-databind:${property("jackson")}")!!)
     include(implementation("com.fasterxml.jackson.core:jackson-annotations:${property("jackson")}")!!)
@@ -92,6 +94,12 @@ if(loader.isFabric) {
 
         mappings("net.fabricmc:yarn:$minecraftVersion+build.${property("yarn_build")}:v2")
     }
+
+    tasks {
+        processResources {
+            exclude("**/neoforge.mods.toml")
+        }
+    }
 }
 
 if (loader.isNeoForge) {
@@ -103,20 +111,15 @@ if (loader.isNeoForge) {
             if (minecraftVersion.lessThan("1.21")) {
                 mappings("dev.architectury:yarn-mappings-patch-neoforge:1.20.5+build.3")
             } else {
-                mappings(file("mappings/fix.tiny"))
+                mappings("dev.architectury:yarn-mappings-patch-neoforge:1.21+build.4")
             }
         })
     }
 
-    tasks.processResources {
-        val map = mapOf(
-            "version" to mod.version,
-            "minecraft_dependency" to mod.minecraftDependency,
-            "loader_version" to loader.getVersion()
-        )
-
-        inputs.properties(map)
-        filesMatching("META-INF/neoforge.mods.toml") { expand(map) }
+    tasks {
+        processResources {
+            exclude("**/fabric.mod.json")
+        }
     }
 }
 

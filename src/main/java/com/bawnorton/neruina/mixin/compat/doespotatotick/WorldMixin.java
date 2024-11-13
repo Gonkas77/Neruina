@@ -24,12 +24,7 @@ public abstract class WorldMixin {
         return false;
     }
 
-    /*? if >=1.19 {*/
     @WrapOperation(method = "tickEntity", at = @At(value = "INVOKE", target = "Ljava/util/function/Consumer;accept(Ljava/lang/Object;)V", remap = false))
-    /*?} else {*//*
-    @SuppressWarnings({"UnresolvedMixinReference", "MixinAnnotationTarget", "InvalidInjectorMethodSignature"})
-    @WrapOperation(method = "tickEntity", at = @At(value = "INVOKE", target = "Lcom/teampotato/does_potato_tick/util/DPTUtils;handleGuardEntityTick(Ljava/util/function/Consumer;Lnet/minecraft/entity/Entity;)V"))
-    *//*?}*/
     private void catchTickingEntities(Consumer<Object> consumer, @Coerce Object entity, Operation<Void> original) {
         Neruina.getInstance().getTickHandler().safelyTickEntities(consumer, (Entity) entity, original);
     }

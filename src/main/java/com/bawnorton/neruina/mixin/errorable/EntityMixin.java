@@ -4,7 +4,7 @@ import com.bawnorton.neruina.Neruina;
 import com.bawnorton.neruina.extend.Errorable;
 import com.bawnorton.neruina.handler.MessageHandler;
 import com.bawnorton.neruina.util.TickingEntry;
-import com.bawnorton.neruina.version.VersionedText;
+import com.bawnorton.neruina.version.Texter;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.damage.DamageSource;
@@ -79,7 +79,11 @@ public abstract class EntityMixin implements Errorable {
         }
     }
 
-    @ModifyReturnValue(method = "isInvulnerableTo", at = @At("RETURN"))
+    //? if >1.21.2 {
+    @ModifyReturnValue(method = "isAlwaysInvulnerableTo", at = @At("RETURN"))
+    //?} else {
+    /*@ModifyReturnValue(method = "isInvulnerableTo", at = @At("RETURN"))
+    *///?}
     private boolean ignoreDamageWhenErrored(boolean original, DamageSource source) {
         if (original) return true;
 
@@ -90,10 +94,10 @@ public abstract class EntityMixin implements Errorable {
                 if(entry == null) {
                     messageHandler.sendToPlayer(
                             player,
-                            VersionedText.concatDelimited(
-                                    VersionedText.LINE_BREAK,
-                                    VersionedText.translatable("neruina.suspended.entity", getName().getString()),
-                                    VersionedText.translatable("neruina.suspended.entity.untracked")
+                            Texter.concatDelimited(
+                                    Texter.LINE_BREAK,
+                                    Texter.translatable("neruina.suspended.entity", getName().getString()),
+                                    Texter.translatable("neruina.suspended.entity.untracked")
                             ),
                             messageHandler.generateEntityActions((Entity) (Object) this),
                             messageHandler.generateInfoAction()
@@ -101,19 +105,19 @@ public abstract class EntityMixin implements Errorable {
                 } else {
                     messageHandler.sendToPlayer(
                             player,
-                            VersionedText.translatable("neruina.suspended.entity", getName().getString()),
+                            Texter.translatable("neruina.suspended.entity", getName().getString()),
                             messageHandler.generateEntityActions((Entity) (Object) this),
                             messageHandler.generateResourceActions(entry)
                     );
                 }
             }
-            /*? if >=1.20 {*/
+            //? if >=1.20 {
             return source != getWorld().getDamageSources().genericKill();
-            /*?} elif >=1.19.3 {*//*
-            return source != getWorld().getDamageSources().outOfWorld();
-            *//*?} else {*/
+            //?} elif >=1.19.3 {
+            /*return source != getWorld().getDamageSources().outOfWorld();
+            *///?} else {
             /*return source != net.minecraft.entity.damage.DamageSource.OUT_OF_WORLD;
-            *//*?}*/
+            *///?}
         }
         return false;
     }

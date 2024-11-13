@@ -2,7 +2,7 @@ package com.bawnorton.neruina.platform;
 
 import java.nio.file.Path;
 
-/*? if fabric {*/
+//? if fabric {
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
@@ -57,69 +57,7 @@ public final class Platform {
         return FabricLoader.getInstance().getEnvironmentType().equals(EnvType.CLIENT);
     }
 }
-/*?} elif forge {*/
-/*import java.util.List;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.loading.FMLLoader;
-import net.minecraftforge.fml.loading.FMLPaths;
-import net.minecraftforge.fml.loading.LoadingModList;
-import net.minecraftforge.fml.loading.moddiscovery.ModInfo;
-import net.minecraftforge.forgespi.language.IModInfo;
-
-public final class Platform {
-    public static Path getConfigDir() {
-        return FMLPaths.CONFIGDIR.get();
-    }
-
-    public static boolean isModLoaded(String modid) {
-        List<ModInfo> mods = LoadingModList.get().getMods();
-        for (ModInfo mod : mods) {
-            if (mod.getModId().equals(modid)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public static ModLoader getModLoader() {
-        return ModLoader.FORGE;
-    }
-
-    public static String modidFromJar(String jarName) {
-        for (IModInfo mod : ModList.get().getMods()) {
-            String modLocation = mod.getOwningFile()
-                    .getFile()
-                    .getFilePath()
-                    .toString()
-                    .replace("+", " ");
-
-            String decodedJarName = URLDecoder.decode(jarName, StandardCharsets.UTF_8);
-            int hashIndex = decodedJarName.lastIndexOf("#");
-            if (hashIndex != -1) {
-                decodedJarName = decodedJarName.substring(0, hashIndex);
-            }
-            if (modLocation.endsWith(decodedJarName)) {
-                return mod.getModId();
-            }
-        }
-        return null;
-    }
-
-    public static String getModVersion(String modid) {
-        return ModList.get().getModFileById(modid).versionString();
-    }
-
-    public static String getVersion() {
-        return FMLLoader.versionInfo().forgeVersion();
-    }
-
-    public static boolean isClient() {
-        return FMLLoader.getDist().isClient();
-    }
-}
-*//*?} elif neoforge {*/
+//?} elif neoforge {
 /*import java.util.List;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
@@ -180,4 +118,4 @@ public final class Platform {
         return FMLLoader.getDist().isClient();
     }
 }
-*//*?}*/
+*///?}

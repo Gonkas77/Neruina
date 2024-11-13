@@ -8,7 +8,7 @@ import com.bawnorton.neruina.report.GithubAuthManager;
 import com.bawnorton.neruina.report.ReportStatus;
 import com.bawnorton.neruina.util.ErroredType;
 import com.bawnorton.neruina.util.TickingEntry;
-import com.bawnorton.neruina.version.VersionedText;
+import com.bawnorton.neruina.version.Texter;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -66,16 +66,17 @@ public final class NeruinaCommandHandler {
                                 .executes(NeruinaCommandHandler::executeKill)
                         )
                 )
-                /*? if >=1.19 {*/
                 .then(CommandManager.literal("report")
                         .then(CommandManager.argument("id", UuidArgumentType.uuid())
                                 .executes(NeruinaCommandHandler::executeReport)
+                        )
+                        .then(CommandManager.literal("test")
+                                .executes(NeruinaCommandHandler::executeTestReport)
                         )
                 )
                 .then(CommandManager.literal("cancel_login")
                         .executes(NeruinaCommandHandler::executeCancelLogin)
                 )
-                /*?}*/
                 .then(CommandManager.literal("id")
                         .then(CommandManager.argument("entity", EntityArgumentType.entity())
                                 .executes(NeruinaCommandHandler::executeIdEntity)
@@ -248,7 +249,6 @@ public final class NeruinaCommandHandler {
         return message;
     }
 
-    /*? if >=1.19 {*/
     private static int executeReport(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         UUID id = UuidArgumentType.getUuid(context, "id");
         TickingEntry entry = Neruina.getInstance().getTickHandler().getTickingEntry(id);
@@ -267,10 +267,10 @@ public final class NeruinaCommandHandler {
             switch (reportCode) {
                 case SUCCESS -> sendFeedback(
                         context,
-                        VersionedText.concatDelimited(
-                                VersionedText.LINE_BREAK,
-                                VersionedText.format(
-                                        VersionedText.translatable("commands.neruina.report.success")
+                        Texter.concatDelimited(
+                                Texter.LINE_BREAK,
+                                Texter.format(
+                                        Texter.translatable("commands.neruina.report.success")
                                 ),
                                 messageHandler.generateOpenReportAction(result.message())
                         )
@@ -290,8 +290,19 @@ public final class NeruinaCommandHandler {
                 case IN_PROGRESS -> context.getSource().sendError(
                         messageHandler.formatText("commands.neruina.report.in_progress")
                 );
+                case TESTING -> {}
             }
         });
+        return 1;
+    }
+
+    private static int executeTestReport(CommandContext<ServerCommandSource> context) {
+        try {
+            Neruina.getInstance().getAutoReportHandler().testReporting(context.getSource().getPlayerOrThrow());
+            context.getSource().sendMessage(messageHandler.formatText("commands.neruina.report.test.pass"));
+        } catch (Exception e) {
+            context.getSource().sendMessage(messageHandler.formatText("commands.neruina.report.test.fail"));
+        }
         return 1;
     }
 
@@ -303,19 +314,18 @@ public final class NeruinaCommandHandler {
         }
         return 1;
     }
-    /*?}*/
 
     private static int executeIdBlock(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
         BlockPos pos = BlockPosArgumentType.getBlockPos(context, "pos");
         BlockEntity blockEntity = context.getSource().getWorld().getBlockEntity(pos);
         Neruina.getInstance().getTickHandler().getTickingEntryId(blockEntity).ifPresentOrElse(uuid -> sendFeedback(
                 context,
-                VersionedText.withStyle(
+                Texter.withStyle(
                         messageHandler.formatText("commands.neruina.id", uuid.toString()),
                         style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, uuid.toString()))
                                 .withHoverEvent(new HoverEvent(
                                         HoverEvent.Action.SHOW_TEXT,
-                                        VersionedText.translatable("commands.neruina.id.tooltip")
+                                        Texter.translatable("commands.neruina.id.tooltip")
                                 ))
                 )
         ), () -> context.getSource().sendError(
@@ -335,12 +345,12 @@ public final class NeruinaCommandHandler {
             ItemStack stack = player.getStackInHand(player.getActiveHand());
             tickHandler.getTickingEntryId(stack).ifPresentOrElse(uuid -> sendFeedback(
                     context,
-                    VersionedText.withStyle(
+                    Texter.withStyle(
                             messageHandler.formatText("commands.neruina.id", uuid.toString()),
                             style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, uuid.toString()))
                                     .withHoverEvent(new HoverEvent(
                                             HoverEvent.Action.SHOW_TEXT,
-                                            VersionedText.translatable("commands.neruina.id.tooltip")
+                                            Texter.translatable("commands.neruina.id.tooltip")
                                     ))
                     )
             ), () -> context.getSource().sendError(
@@ -353,12 +363,12 @@ public final class NeruinaCommandHandler {
         } else {
             tickHandler.getTickingEntryId(entity).ifPresentOrElse(uuid -> sendFeedback(
                     context,
-                    VersionedText.withStyle(
+                    Texter.withStyle(
                             messageHandler.formatText("commands.neruina.id", uuid.toString()),
                             style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, uuid.toString()))
                                     .withHoverEvent(new HoverEvent(
                                             HoverEvent.Action.SHOW_TEXT,
-                                            VersionedText.translatable("commands.neruina.id.tooltip")
+                                            Texter.translatable("commands.neruina.id.tooltip")
                                     ))
                     )
             ), () -> context.getSource().sendError(
@@ -385,10 +395,10 @@ public final class NeruinaCommandHandler {
         if (cause == null) {
             sendFeedback(
                     context,
-                    VersionedText.pad(
-                            VersionedText.concatDelimited(
-                                    VersionedText.LINE_BREAK,
-                                    VersionedText.format(VersionedText.translatable(
+                    Texter.pad(
+                            Texter.concatDelimited(
+                                    Texter.LINE_BREAK,
+                                    Texter.format(Texter.translatable(
                                                     "commands.neruina.info.null_cause",
                                                     entry.getCauseName(),
                                                     messageHandler.posAsNums(entry.pos())
@@ -402,10 +412,10 @@ public final class NeruinaCommandHandler {
         } else if (cause instanceof Entity entity) {
             sendFeedback(
                     context,
-                    VersionedText.pad(
-                            VersionedText.concatDelimited(
-                                    VersionedText.LINE_BREAK,
-                                    VersionedText.format(VersionedText.translatable(
+                    Texter.pad(
+                            Texter.concatDelimited(
+                                    Texter.LINE_BREAK,
+                                    Texter.format(Texter.translatable(
                                                     "commands.neruina.info.entity",
                                                     entry.getCauseName(),
                                                     messageHandler.posAsNums(entry.pos())
@@ -419,10 +429,10 @@ public final class NeruinaCommandHandler {
         } else if (cause instanceof BlockEntity) {
             sendFeedback(
                     context,
-                    VersionedText.pad(
-                            VersionedText.concatDelimited(
-                                    VersionedText.LINE_BREAK,
-                                    VersionedText.format(VersionedText.translatable(
+                    Texter.pad(
+                            Texter.concatDelimited(
+                                    Texter.LINE_BREAK,
+                                    Texter.format(Texter.translatable(
                                             "commands.neruina.info.block_entity",
                                             entry.getCauseName(),
                                             messageHandler.posAsNums(entry.pos())
@@ -435,10 +445,10 @@ public final class NeruinaCommandHandler {
         } else if (cause instanceof ItemStack) {
             sendFeedback(
                     context,
-                    VersionedText.pad(
-                            VersionedText.concatDelimited(
-                                    VersionedText.LINE_BREAK,
-                                    VersionedText.format(VersionedText.translatable(
+                    Texter.pad(
+                            Texter.concatDelimited(
+                                    Texter.LINE_BREAK,
+                                    Texter.format(Texter.translatable(
                                             "commands.neruina.info.item_stack",
                                             entry.getCauseName()
                                     )),
@@ -450,10 +460,10 @@ public final class NeruinaCommandHandler {
         } else {
             sendFeedback(
                     context,
-                    VersionedText.pad(
-                            VersionedText.concatDelimited(
-                                    VersionedText.LINE_BREAK,
-                                    VersionedText.format(VersionedText.translatable(
+                    Texter.pad(
+                            Texter.concatDelimited(
+                                    Texter.LINE_BREAK,
+                                    Texter.format(Texter.translatable(
                                             "commands.neruina.info.unknown",
                                             entry.getCauseName()
                                     )),
@@ -488,7 +498,7 @@ public final class NeruinaCommandHandler {
 
     private static void sendFeedback(CommandContext<ServerCommandSource> context, Text text) {
         context.getSource().sendFeedback(
-                /*? if >=1.20*/
+                //? if >=1.20
                 () ->
                 text,
                 true
