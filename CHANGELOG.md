@@ -1,3 +1,7 @@
+# 2.2.3
+
+- Update configurable dep for 1.21.1
+
 # 2.2.2
 
 - Support 1.21.3
